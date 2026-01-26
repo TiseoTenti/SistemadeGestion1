@@ -15,12 +15,16 @@ def create_app():
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
     
 
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
-         'DATABASE_URL',
-         'postgresql+psycopg2://inventario_user:Daniela33@db:5432/inventario_db'
-)
+    database_url = os.getenv('DATABASE_URL')
 
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    if database_url:
+    # Producción (VPS / Docker / Postgres)
+        app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    
+    else:
+    # Desarrollo local (SQLite)
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'  
+
 
     # Inicializar extensiones
     db.init_app(app)

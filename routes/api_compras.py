@@ -10,8 +10,17 @@ compras_bp = Blueprint('compras_bp', __name__, url_prefix='/api/v1/compras')
 
 @compras_bp.route('/', methods=['GET'])
 def listar_compras():
-    compras = Compra.query.order_by(Compra.id_compra.desc()).all()
+    compras = (
+        db.session.query(Compra)
+        .join(Proveedor)
+        .join(Insumo)
+        .order_by(Compra.id_compra.desc())
+        .limit(20)
+        .all()
+    )
     return jsonify([c.to_dict() for c in compras])
+
+
 
 
 @compras_bp.route('/insumos', methods=['GET'])

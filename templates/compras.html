@@ -2,94 +2,75 @@
 {% block content %}
 
 <script>
-  const currentUserIsAdmin = JSON.parse('{{ current_user_is_admin | tojson }}');
+const currentUserIsAdmin = JSON.parse('{{ current_user_is_admin | tojson }}');
 </script>
 
-
-
-<h2>Registrar Compra</h2>
-
+<h2>Registrar Compra!</h2>
 
 <form id="formCompra" class="mb-3">
   <div class="row g-2">
-    <div class="col-md-2">
-      <div class="col-md-11"><input class="form-control" list="proveedoresLista" id="inputProveedor" placeholder="Buscar proveedor" required>
-      <datalist id="proveedoresLista"></datalist>
+    <div class="col-md-2 position-relative">
+      <input class="form-control" id="inputProveedor" placeholder="Buscar proveedor" required>
       <input type="hidden" name="id_proveedor" id="id_proveedor">
-      </div>
-
+      <div id="sugerenciasProveedores" class="list-group position-absolute w-100"></div>
     </div>
 
-    <div class="col-md-2">
-      <div class="col-md-11"><input class="form-control" list="insumosLista" id="inputInsumo" placeholder="Buscar insumo" required>
-      <datalist id="insumosLista"></datalist>
+    <div class="col-md-2 position-relative">
+      <input class="form-control" id="inputInsumo" placeholder="Buscar insumo" required>
       <input type="hidden" name="id_insumo" id="id_insumo">
+      <div id="sugerenciasInsumos" class="list-group position-absolute w-100"></div>
     </div>
-
-   </div>
 
     <div class="col-md-2">
       <input class="form-control" name="cantidad" type="number" step="0.01" placeholder="Cantidad" required>
     </div>
+
     <div class="col-md-2">
       <input class="form-control" name="precio_unitario" type="number" step="0.01" placeholder="Precio unitario" required>
     </div>
+
     <div class="col-md-2">
       <input class="form-control" name="fecha" type="date">
     </div>
-  </div>
-  <div class="mt-2">
-    <button class="btn btn-primary">Registrar Compra</button>
+
+    <div class="col-md-2">
+      <button class="btn btn-primary w-100">Registrar Compra</button>
+    </div>
   </div>
 </form>
 
 <div id="msg" class="fw-bold text-center mb-3"></div>
 
-
-<div class="row mb-3">
-  <div class="col-md-4">
-    <input list="insumosLista" 
-       id="buscarInsumo" 
-       class="form-control" 
-       placeholder="Buscar por nombre de insumo">
-    <datalist id="insumosLista"></datalist>
-
-  </div>
-  <div class="col-md-2">
-    <button class="btn btn-secondary w-100" onclick="buscarHistorial()">
-      Buscar
-    </button>
-  </div>
-  <div class="col-md-2">
-    <button class="btn btn-outline-primary w-100" onclick="cargarHistorialCompras()">
-      Ver todos
-    </button>
-  </div>
-</div>
-
-<div class="row mb-3">
-  <div class="col-md-4">
-    <input
-      list="proveedoresLista"
-      id="buscarProveedor"
-      class="form-control"
-      placeholder="Buscar por proveedor"
-    >
-    <datalist id="proveedoresLista"></datalist>
-  </div>
-
-  <div class="col-md-2">
-    <button class="btn btn-secondary w-100" onclick="buscarPorProveedor()">
-      Buscar proveedor
-    </button>
-  </div>
-</div>
-
-
-
 <hr>
 
 <h3>📜 Historial de Compras</h3>
+
+<div class="row mb-3">
+  <div class="col-md-4 position-relative">
+    <input type="text" id="buscarInsumo" class="form-control" placeholder="Buscar por insumo" autocomplete="off">
+    <input type="hidden" id="id_insumo_busqueda" name="id_insumo_busqueda">
+    <div id="sugerenciasInsumosBusqueda" class="list-group position-absolute w-100"></div>
+  </div>
+  <div class="col-md-2">
+    <button class="btn btn-secondary w-100" onclick="buscarHistorial()">Buscar</button>
+  </div>
+
+  <div class="col-md-4 position-relative">
+    <input type="text" id="buscarProveedor" class="form-control" placeholder="Buscar por proveedor" autocomplete="off">
+    <input type="hidden" id="id_proveedor_busqueda" name="id_proveedor_busqueda">
+    <div id="sugerenciasProveedoresBusqueda" class="list-group position-absolute w-100"></div>
+  </div>
+  <div class="col-md-2">
+    <button class="btn btn-secondary w-100" onclick="buscarPorProveedor()">Buscar proveedor</button>
+  </div>
+</div>
+
+<div class="row mb-3">
+  <div class="col-md-2">
+    <button class="btn btn-outline-primary w-100" onclick="cargarHistorialCompras()">Ver todos</button>
+  </div>
+</div>
+
 <table class="table table-striped" id="tblCompras">
   <thead>
     <tr>
@@ -137,284 +118,195 @@
   </div>
 </div>
 
-
-
-
-
 <script>
-async function cargarHistorialCompras() {
-  const res = await fetch('/api/v1/compras/');
-  if (!res.ok) return;
-  const data = await res.json();
-  renderTablaCompras(data); // <--- Aquí se renderiza todo
-}
+window.addEventListener('DOMContentLoaded', () => {
 
+  let paginaActual = 1;
 
-function renderTablaCompras(data) {
-  const tbody = document.querySelector('#tblCompras tbody');
-  tbody.innerHTML = '';
+  // -----------------------------
+  // Autocomplete genérico
+  // -----------------------------
+  function crearAutocomplete(inputId, hiddenId, endpoint, sugerenciasId) {
+    const input = document.getElementById(inputId);
+    const hidden = document.getElementById(hiddenId);
+    const contenedor = document.getElementById(sugerenciasId);
+    if (!input || !hidden || !contenedor) return;
 
-  data.forEach(c => {
-    tbody.innerHTML += `
-      <tr>
-        <td>${c.id_compra}</td>
-        <td>${c.fecha}</td>
-        <td>${c.proveedor || ''}</td>
-        <td>${c.insumo || ''}</td>
-        <td>${c.cantidad}</td>
-        <td>$${c.precio_unitario.toFixed(2)}</td>
-        <td>$${c.total.toFixed(2)}</td>
-        <td>
-          <button class="btn btn-sm btn-warning"
-            onclick="abrirModalEditar(${c.id_compra}, ${c.cantidad}, ${c.precio_unitario}, '${c.fecha}')">
-            Editar
-          </button>
-          <button
-            class="btn btn-sm ms-2 btn-revisado ${c.revisado ? 'activo' : ''}"
-            onclick="marcarRevisado(${c.id_compra})"
-            ${c.revisado ? 'disabled' : ''}>
-            Revisado
-          </button>
+    input.addEventListener('input', async () => {
+      const q = input.value.trim();
+      contenedor.innerHTML = '';
+      hidden.value = '';
 
-          ${currentUserIsAdmin ? `
-          <button
-            class="btn btn-sm ms-2 btn-confirmado ${c.confirmado ? 'activo' : ''}"
-            onclick="marcarConfirmado(${c.id_compra})"
-            ${c.confirmado ? 'disabled' : ''}>
-            Confirmar
-            </button>
-            ` : ''}
+      if (q.length < 2) return;
 
-        </td>
-      </tr>`;
-  });
-}
+      try {
+        const res = await fetch(`${endpoint}?q=${encodeURIComponent(q)}`);
+        if (!res.ok) return;
+        const data = await res.json();
 
+        data.forEach(item => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'list-group-item list-group-item-action';
+          btn.textContent = item.nombre;
 
-async function cargarAutocompleteInsumos() {
-  const res = await fetch('/api/v1/compras/insumos');
-  if (!res.ok) return;
-  const data = await res.json();
+          btn.onclick = () => {
+            input.value = item.nombre;
+            if ('id_insumo' in item) hidden.value = item.id_insumo;
+            else if ('id_proveedor' in item) hidden.value = item.id_proveedor;
+            contenedor.innerHTML = '';
+          };
+          contenedor.appendChild(btn);
+        });
 
-  const datalist = document.getElementById('insumosLista');
-  datalist.innerHTML = '';
-  data.forEach(i => {
-    datalist.innerHTML += `<option value="${i.nombre}"></option>`;
-  });
-}
+      } catch (e) { console.error('Error autocomplete:', e); }
+    });
 
-
-
-async function actualizarCompra(id_compra, nuevaCantidad, nuevoPrecio, nuevaFecha) {
-  const body = {
-    cantidad: nuevaCantidad,
-    precio_unitario: nuevoPrecio,
-    fecha: nuevaFecha
-  };
-
-  const res = await fetch(`/api/v1/compras/${id_compra}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-
-  if (res.ok) {
-    await cargarHistorialCompras();
-    alert('Compra actualizada correctamente');
-  } else {
-    const err = await res.json();
-    alert('Error al actualizar compra: ' + (err.error || 'Desconocido'));
+    document.addEventListener('click', e => {
+      if (!contenedor.contains(e.target) && e.target !== input) contenedor.innerHTML = '';
+    });
   }
-}
 
+  // -----------------------------
+  // Crear autocompletes
+  // -----------------------------
+  crearAutocomplete('inputProveedor','id_proveedor','/api/v1/proveedores/buscar','sugerenciasProveedores');
+  crearAutocomplete('inputInsumo','id_insumo','/api/v1/insumos/buscar','sugerenciasInsumos');
+  crearAutocomplete('buscarProveedor','id_proveedor_busqueda','/api/v1/proveedores/buscar','sugerenciasProveedoresBusqueda');
+  crearAutocomplete('buscarInsumo','id_insumo_busqueda','/api/v1/insumos/buscar','sugerenciasInsumosBusqueda');
 
-let proveedoresMap = {};
-
-async function cargarProveedoresAutocomplete() {
-  const res = await fetch('/api/v1/proveedores/');
-  if (!res.ok) return;
-
-  const data = await res.json();
-  const datalist = document.getElementById('proveedoresLista');
-  datalist.innerHTML = '';
-  proveedoresMap = {};
-
-  data.forEach(p => {
-    const label = p.nombre;   // SOLO nombre, como pedís
-    proveedoresMap[label] = p.id_proveedor;
-    datalist.innerHTML += `<option value="${label}"></option>`;
-  });
-}
-
-document.getElementById('inputProveedor').addEventListener('change', e => {
-  const nombre = e.target.value;
-  document.getElementById('id_proveedor').value =
-    proveedoresMap[nombre] || '';
-});
-
-
-let insumosMap = {};
-
-async function cargarInsumosAutocomplete() {
-  const res = await fetch('/api/v1/insumos/');
-  if (!res.ok) return;
-
-  const data = await res.json();
-  const datalist = document.getElementById('insumosLista');
-  datalist.innerHTML = '';
-  insumosMap = {};
-
-  data.forEach(i => {
-    const label = i.nombre;   // SOLO nombre del insumo
-    insumosMap[label] = i.id_insumo;
-    datalist.innerHTML += `<option value="${label}"></option>`;
-  });
-}
-
-document.getElementById('inputInsumo').addEventListener('change', e => {
-  const nombre = e.target.value;
-  document.getElementById('id_insumo').value =
-    insumosMap[nombre] || '';
-});
-
-
-
-
-
-
-async function buscarHistorial() {
-  const nombre = document.getElementById('buscarInsumo').value.trim();
-  if (!nombre) return;
-
-  const res = await fetch(`/api/v1/compras/buscar?nombre=${encodeURIComponent(nombre)}`);
-  if (!res.ok) return;
-
-  const data = await res.json();
-  renderTablaCompras(data);
-}
-
-
-
-async function cargarProveedoresBusqueda() {
-  const res = await fetch('/api/v1/proveedores/');
-  if (!res.ok) return;
-
-  const data = await res.json();
-  const datalist = document.getElementById('proveedoresLista');
-  datalist.innerHTML = '';
-
-  data.forEach(p => {
-    datalist.innerHTML += `
-      <option value="${p.nombre}"></option>
-    `;
-  });
-}
-
-
-async function buscarPorProveedor() {
-  const nombre = document.getElementById('buscarProveedor').value.trim();
-  if (!nombre) return;
-
-  const res = await fetch(`/api/v1/compras/proveedor/${encodeURIComponent(nombre)}`);
-  if (!res.ok) return;
-
-  const data = await res.json();
-  renderTablaCompras(data);
-}
-
-
-
-
-async function marcarRevisado(id) {
-  const res = await fetch(`/api/v1/compras/${id}/revisar`, { method: 'PUT'});
-
-  if (res.ok) {
-    await cargarHistorialCompras();
-  } else {
-    alert('No se pudo marcar como revisada');
+  // -----------------------------
+  // Funciones de historial y render
+  // -----------------------------
+  async function cargarHistorialCompras() {
+    const res = await fetch(`/api/v1/compras/?page=${paginaActual}&per_page=20`);
+    if (!res.ok) { alert('Error al cargar compras'); return; }
+    const data = await res.json();
+    renderTablaCompras(data.items || data);
   }
-}
 
-
-async function marcarConfirmado(id) {
-  const res = await fetch(`/api/v1/compras/${id}/confirmar`, {method: 'PUT'});
-
-  if (res.ok) {
-    await cargarHistorialCompras();
-    alert('Compra confirmada correctamente');
-  } else {
-    const err = await res.json();
-    alert('Error al confirmar: ' + (err.error || 'Desconocido'));
+  function renderTablaCompras(data) {
+    const tbody = document.querySelector('#tblCompras tbody');
+    tbody.innerHTML = '';
+    data.forEach(c => {
+      tbody.innerHTML += `
+        <tr>
+          <td>${c.id_compra}</td>
+          <td>${c.fecha}</td>
+          <td>${c.proveedor || ''}</td>
+          <td>${c.insumo || ''}</td>
+          <td>${c.cantidad}</td>
+          <td>$${Number(c.precio_unitario || 0).toFixed(2)}</td>
+          <td>$${Number(c.total || 0).toFixed(2)}</td>
+          <td>
+            <button class="btn btn-sm btn-warning" onclick="abrirModalEditar(${c.id_compra},${c.cantidad},${c.precio_unitario},'${c.fecha}')">Editar</button>
+            <button class="btn btn-sm ms-2 btn-revisado ${c.revisado ? 'activo' : ''}" onclick="marcarRevisado(${c.id_compra})" ${c.revisado ? 'disabled' : ''}>Revisado</button>
+            ${currentUserIsAdmin ? `<button class="btn btn-sm ms-2 btn-confirmado ${c.confirmado ? 'activo' : ''}" onclick="marcarConfirmado(${c.id_compra})" ${c.confirmado ? 'disabled' : ''}>Confirmar</button>` : ''}
+          </td>
+        </tr>`;
+    });
   }
-}
 
+  // -----------------------------
+  // Registro de compra
+  // -----------------------------
+  document.getElementById('formCompra').addEventListener('submit', async e => {
+    e.preventDefault();
+    const body = Object.fromEntries(new FormData(e.target).entries());
+    if (!body.id_proveedor || !body.id_insumo) return alert('Debe seleccionar proveedor e insumo válido');
 
+    body.cantidad = parseFloat(body.cantidad);
+    body.precio_unitario = parseFloat(body.precio_unitario);
 
+    const res = await fetch('/api/v1/compras/', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
 
-
-
-// Función para abrir modal y cargar valores
-function abrirModalEditar(id, cantidad, precio, fecha) {
-  document.getElementById('id_compra').value = id;
-  document.getElementById('cantidad').value = parseFloat(cantidad).toFixed(2);
-  document.getElementById('precio_unitario').value = parseFloat(precio).toFixed(2);
-  document.getElementById('fecha').value = fecha;
-
-  const modalEl = document.getElementById('modalEditarCompra');
-  const modal = new bootstrap.Modal(modalEl);
-  modal.show();
-}
-
-// Listener del formulario de edición
-document.getElementById('formEditarCompra').addEventListener('submit', async e => {
-  e.preventDefault();
-  const id = document.getElementById('id_compra').value;
-  const cantidad = parseFloat(document.getElementById('cantidad').value);
-  const precio = parseFloat(document.getElementById('precio_unitario').value);
-  const fecha = document.getElementById('fecha').value;
-
-  await actualizarCompra(id, cantidad, precio, fecha);
-
-  const modalEl = document.getElementById('modalEditarCompra');
-  const modal = bootstrap.Modal.getInstance(modalEl);
-  modal.hide();
-});
-
-document.getElementById('formCompra').addEventListener('submit', async e => {
-  e.preventDefault();
-  const body = Object.fromEntries(new FormData(e.target).entries());
-  body.cantidad = parseFloat(body.cantidad);
-  body.precio_unitario = parseFloat(body.precio_unitario);
-
-  const res = await fetch('/api/v1/compras/', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    const msg = document.getElementById('msg');
+    if (res.ok) {
+      msg.textContent = '✅ Compra registrada correctamente';
+      msg.classList.remove('text-danger'); msg.classList.add('text-success');
+      e.target.reset();
+      document.getElementById('id_proveedor').value = '';
+      document.getElementById('id_insumo').value = '';
+      await cargarHistorialCompras();
+    } else {
+      const err = await res.json();
+      msg.textContent = '❌ Error: ' + (err.error || 'No se pudo registrar la compra');
+      msg.classList.remove('text-success'); msg.classList.add('text-danger');
+    }
   });
 
-  const msg = document.getElementById('msg');
-  if (res.ok) {
-    msg.textContent = '✅ Compra registrada correctamente';
-    msg.classList.remove('text-danger');
-    msg.classList.add('text-success');
-    e.target.reset();
-    await cargarHistorialCompras();
-  } else {
-    const err = await res.json();
-    msg.textContent = '❌ Error: ' + (err.error || 'No se pudo registrar la compra');
-    msg.classList.remove('text-success');
-    msg.classList.add('text-danger');
+  // -----------------------------
+  // Editar compra
+  // -----------------------------
+  async function actualizarCompra(id_compra, cantidad, precio, fecha) {
+    const body = {cantidad, precio_unitario: precio, fecha};
+    const res = await fetch(`/api/v1/compras/${id_compra}`, {
+      method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
+    });
+    if(res.ok) { await cargarHistorialCompras(); alert('Compra actualizada correctamente'); }
+    else { const err = await res.json(); alert('Error al actualizar compra: '+(err.error||'Desconocido')); }
   }
-});
 
+  function abrirModalEditar(id, cantidad, precio, fecha){
+    document.getElementById('id_compra').value=id;
+    document.getElementById('cantidad').value=parseFloat(cantidad).toFixed(2);
+    document.getElementById('precio_unitario').value=parseFloat(precio).toFixed(2);
+    document.getElementById('fecha').value=fecha;
+    new bootstrap.Modal(document.getElementById('modalEditarCompra')).show();
+  }
 
+  document.getElementById('formEditarCompra').addEventListener('submit', async e=>{
+    e.preventDefault();
+    await actualizarCompra(
+      document.getElementById('id_compra').value,
+      parseFloat(document.getElementById('cantidad').value),
+      parseFloat(document.getElementById('precio_unitario').value),
+      document.getElementById('fecha').value
+    );
+    bootstrap.Modal.getInstance(document.getElementById('modalEditarCompra')).hide();
+  });
 
-window.addEventListener('load', async () => {
-  await cargarProveedoresAutocomplete();
-  await cargarInsumosAutocomplete();
-  await cargarAutocompleteInsumos();
-  await cargarHistorialCompras();
-  await cargarProveedoresBusqueda();
+  // -----------------------------
+  // Revisado / Confirmado
+  // -----------------------------
+  async function marcarRevisado(id){
+    const res = await fetch(`/api/v1/compras/${id}/revisar`, {method:'PUT'});
+    if(res.ok) await cargarHistorialCompras();
+    else alert('No se pudo marcar como revisada');
+  }
+
+  async function marcarConfirmado(id){
+    const res = await fetch(`/api/v1/compras/${id}/confirmar`, {method:'PUT'});
+    if(res.ok){ await cargarHistorialCompras(); alert('Compra confirmada correctamente'); }
+    else { const err = await res.json(); alert('Error al confirmar: '+(err.error||'Desconocido')); }
+  }
+
+  // -----------------------------
+  // Busquedas
+  // -----------------------------
+  async function buscarHistorial(){
+    const id=document.getElementById('id_insumo_busqueda').value;
+    if(!id) return alert('Seleccione un insumo válido');
+    const res = await fetch(`/api/v1/compras/insumo/${id}`);
+    if(res.ok){ const data = await res.json(); renderTablaCompras(data); }
+  }
+
+  async function buscarPorProveedor(){
+    const id=document.getElementById('id_proveedor_busqueda').value;
+    if(!id) return alert('Seleccione un proveedor válido');
+    const res = await fetch(`/api/v1/compras/proveedor/${id}`);
+    if(res.ok){ const data = await res.json(); renderTablaCompras(data); }
+  }
+
+  // -----------------------------
+  // Cargar al iniciar
+  // -----------------------------
+  cargarHistorialCompras();
 });
 </script>
+
 {% endblock %}
