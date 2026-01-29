@@ -3,120 +3,145 @@ import os
 import pandas as pd
 from decimal import Decimal
 from datetime import datetime
-
 # ================================
-# AÑADIR LA RAÍZ DEL PROYECTO AL PYTHONPATH
+# AGREGAR RAÍZ DEL PROYECTO
 # ================================
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# ================================
-# IMPORTAR APP Y MODELOS
-# ================================
 from app import app, db
-from models import Compra, Proveedor, Insumo
+from models import Compra, Proveedor, Insumo, ProveedorInsumo, HistorialPrecio
 
 # ================================
 # CONFIGURACIÓN
 # ================================
-CSV_PATH = "/app/scripts/compras_limpio1.csv"  # Ruta a tu CSV
-REEMPLAZO_DEFAULT = "-"                        # Valor por defecto para campos vacíos
-UNIDAD_MEDIDA_DEFAULT = "Unidad"              # Unidad por defecto para insumos nuevos
+CSV_PATH = "/app/scripts/compras_limpio.csv"
+CUIT_DEFAULT = "00-00000000-0"
+UNIDAD_MEDIDA_DEFAULT = "Unidad"
 
 # ================================
-# INICIALIZAR APP Y CONTEXTO DB
+# UTILIDADES
 # ================================
-app.app_context().push()
+def normalizar(valor):
+    if pd.isna(valor):
+        return ""
+    return str(valor).strip().upper()
 
-# ================================
-# LEER CSV
-# ================================
-if not os.path.isfile(CSV_PATH):
-    raise FileNotFoundError(f"No se encuentra el archivo CSV en {CSV_PATH}")
+def limitar(texto, max_len):
+    if not texto:
+        return ""
+    return texto[:max_len]
 
-df = pd.read_csv(CSV_PATH)
-df.fillna(REEMPLAZO_DEFAULT, inplace=True)
-
-# ================================
-# LIMPIAR DATOS Y ASEGURAR CAMPOS
-# ================================
-for col in ['id_proveedor', 'insumo']:
-    if col in df.columns:
-        df[col] = df[col].astype(str).str.upper().str.strip()
-
-# ================================
-# CARGAR COMPRAS
-# ================================
-compras_cargadas = 0
-for _, row in df.iterrows():
-    # Buscar proveedor
-    proveedor_nombre = row['id_proveedor']
-    proveedor = Proveedor.query.filter_by(nombre=proveedor_nombre).first()
-    if not proveedor:
-        print(f"Proveedor '{proveedor_nombre}' no encontrado, se omite esta compra.")
-        continue
-
-    # Buscar o crear insumo
-    insumo_nombre = row['insumo']
-    insumo = Insumo.query.filter_by(nombre=insumo_nombre).first()
+def decimal_safe(valor):
     try:
-        precio_unitario = Decimal(str(row['precio_unitario']))
-        if precio_unitario <= 0:
-            precio_unitario = None
+        return Decimal(str(valor)).quantize(Decimal("0.01"))
     except Exception:
-        precio_unitario = None
+        return Decimal("0.00")
 
-    try:
-        cantidad = Decimal(str(row['cantidad']))
-    except Exception:
-        cantidad = Decimal(0)
 
-    total = (precio_unitario or Decimal(0)) * cantidad
 
-    if not insumo:
-        # Crear insumo con unidad y precio
-        insumo = Insumo(
-            nombre=insumo_nombre,
-            cantidad=Decimal(0),
-            unidad_medida=UNIDAD_MEDIDA_DEFAULT,
-            stock_minimo=Decimal(0),
-            ultimo_precio=precio_unitario or Decimal(0)
+
+
+# ================================
+# PROCESO PRINCIPAL
+# ================================
+with app.app_context():
+
+    df = pd.read_csv(CSV_PATH)
+    compras_insertadas = 0
+
+    for _, row in df.iterrows():
+        # ----------------------------
+        # PROVEEDOR
+        # ----------------------------
+        nombre_proveedor = limitar(normalizar(row.get("proveedor")), 100)
+
+        proveedor = Proveedor.query.filter_by(nombre=nombre_proveedor).first()
+
+        if not proveedor:
+            proveedor = Proveedor(
+                nombre=nombre_proveedor,
+                cuit=CUIT_DEFAULT
+            )
+            db.session.add(proveedor)
+            db.session.flush()
+            print(f"🆕 Proveedor creado: {nombre_proveedor}")
+
+        # ----------------------------
+        # INSUMO
+        # ----------------------------
+        nombre_insumo = limitar(normalizar(row.get("insumo")), 100)
+
+        insumo = Insumo.query.filter_by(nombre=nombre_insumo).first()
+
+        if not insumo:
+            insumo = Insumo(
+                nombre=nombre_insumo,
+                unidad_medida=UNIDAD_MEDIDA_DEFAULT,
+                cantidad=Decimal("0.00")
+            )
+            db.session.add(insumo)
+            db.session.flush()
+            print(f"🆕 Insumo creado: {nombre_insumo}")
+
+
+        # ----------------------------
+        # FECHA
+        # ----------------------------
+        try:
+            fecha = pd.to_datetime(row.get("fecha")).date()
+        except Exception:
+            fecha = datetime.utcnow().date()
+
+        # ----------------------------
+        # CANTIDAD / PRECIO
+        # ----------------------------
+        cantidad = decimal_safe(row.get("cantidad"))
+        precio_unitario = decimal_safe(row.get("precio_unitario"))
+        total = (cantidad * precio_unitario).quantize(Decimal("0.01"))
+
+        # ----------------------------
+        # COMPRA
+        # ----------------------------
+        compra = Compra(
+            fecha=fecha,
+            id_proveedor=proveedor.id_proveedor,
+            id_insumo=insumo.id_insumo,
+            cantidad=cantidad,
+            precio_unitario=precio_unitario,
+            total=total
         )
-        db.session.add(insumo)
-        db.session.flush()  # para obtener id_insumo
 
-    # Fecha
-    try:
-        fecha = pd.to_datetime(row['fecha']).date()
-    except Exception:
-        continue
+        db.session.add(compra)
+        compras_insertadas += 1
+        
+        # --------------------------------
+        # PROVEEDOR - INSUMO (PRECIO)
+        # --------------------------------
+        pi = ProveedorInsumo.query.filter_by(
+            id_proveedor=proveedor.id_proveedor,
+            id_insumo=insumo.id_insumo
+        ).first()
 
-    # Evitar duplicados exactos de fecha + proveedor + insumo
-    existe = Compra.query.filter_by(
-        fecha=fecha,
-        id_proveedor=proveedor.id_proveedor,
-        id_insumo=insumo.id_insumo
-    ).first()
-    if existe:
-        continue
+        if not pi:
+            pi = ProveedorInsumo(
+                id_proveedor=proveedor.id_proveedor,
+                id_insumo=insumo.id_insumo,
+                precio_actual=precio_unitario
+            )
+            db.session.add(pi)
+            db.session.flush()
+        else:
+            pi.precio_actual = precio_unitario
 
-    # Crear compra
-    compra = Compra(
-        fecha=fecha,
-        id_proveedor=proveedor.id_proveedor,
-        id_insumo=insumo.id_insumo,
-        cantidad=cantidad,
-        precio_unitario=precio_unitario or Decimal(0),
-        total=total
-    )
-    db.session.add(compra)
-    compras_cargadas += 1
+# --------------------------------
+# HISTORIAL DE PRECIOS
+# --------------------------------
+        hist = HistorialPrecio(
+            id_proveedor_insumo=pi.id_proveedor_insumo,
+            precio=precio_unitario
+        )
+        db.session.add(hist)
 
-    # Actualizar último precio solo si precio_unitario existe
-    if precio_unitario:
-        insumo.ultimo_precio = precio_unitario
-# ================================
-# COMMIT FINAL
-# ================================
-db.session.commit()
-print(f"Carga completada! Se agregaron {compras_cargadas} compras a la base de datos y se actualizaron precios de insumos.")
+    db.session.commit()
+    print(f"✅ Carga finalizada. Compras insertadas: {compras_insertadas}")
 
