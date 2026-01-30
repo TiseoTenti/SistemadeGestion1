@@ -1,10 +1,11 @@
-{% extends "base.html" %} 
+{% extends "base.html" %}
 {% block content %}
 
 <script>
 const currentUserIsAdmin = JSON.parse('{{ current_user_is_admin | tojson }}');
 </script>
 
+<<<<<<< HEAD
 <h2>Registrar Compra!</h2>
 
 <form id="formCompra" class="mb-3">
@@ -38,9 +39,54 @@ const currentUserIsAdmin = JSON.parse('{{ current_user_is_admin | tojson }}');
     </div>
   </div>
 </form>
+=======
+<h2 class="mb-4"> Registro de Compras</h2>
 
-<div id="msg" class="fw-bold text-center mb-3"></div>
+<!-- Card para registro de compras -->
+<div class="card mb-4 shadow-sm">
+  <div class="card-body">
+    <form id="formCompra" class="row g-3">
+      <!-- Proveedor -->
+      <div class="col-md-4 position-relative">
+        <label for="inputProveedor" class="form-label">Proveedor</label>
+        <input type="text" class="form-control" id="inputProveedor" placeholder="Buscar proveedor" autocomplete="off" required>
+        <div id="sugerenciasProveedores" class="list-group position-absolute w-100"></div>
+        <input type="hidden" name="id_proveedor" id="id_proveedor">
+      </div>
 
+      <!-- Insumo -->
+      <div class="col-md-4 position-relative">
+        <label for="inputInsumo" class="form-label">Insumo</label>
+        <input type="text" class="form-control" id="inputInsumo" placeholder="Buscar insumo" autocomplete="off" required>
+        <div id="sugerenciasInsumos" class="list-group position-absolute w-100"></div>
+        <input type="hidden" name="id_insumo" id="id_insumo">
+      </div>
+
+      <!-- Cantidad -->
+      <div class="col-md-2">
+        <label for="cantidad" class="form-label">Cantidad</label>
+        <input class="form-control" name="cantidad" type="number" step="0.01" placeholder="Cantidad" required>
+      </div>
+
+      <!-- Precio Unitario -->
+      <div class="col-md-2">
+        <label for="precio_unitario" class="form-label">Precio Unitario</label>
+        <input class="form-control" name="precio_unitario" type="number" step="0.01" placeholder="Precio unitario" required>
+      </div>
+
+      <!-- Fecha -->
+      <div class="col-md-3">
+        <label for="fecha" class="form-label">Fecha</label>
+        <input class="form-control" name="fecha" type="date">
+      </div>
+>>>>>>> d68dfeb (Actualizar compras: mostrar últimas 20, mejoras de frontend y backend)
+
+      <div class="col-12 mt-3">
+        <button class="btn btn-primary w-100">Registrar Compra</button>
+      </div>
+    </form>
+
+<<<<<<< HEAD
 <hr>
 
 <h3>📜 Historial de Compras</h3>
@@ -72,6 +118,57 @@ const currentUserIsAdmin = JSON.parse('{{ current_user_is_admin | tojson }}');
 </div>
 
 <table class="table table-striped" id="tblCompras">
+=======
+    <div id="msg" class="fw-bold text-center mt-3"></div>
+  </div>
+</div>
+
+<!-- Sección de Búsqueda -->
+<h3 class="mb-3">🔍 Búsqueda de Compras</h3>
+
+<div class="card mb-4 shadow-sm">
+  <div class="card-body">
+    <div class="row g-3">
+      <!-- Buscar por Insumo -->
+      <div class="col-md-6 position-relative">
+        <label for="buscarInsumo" class="form-label">Nombre del Insumo</label>
+        <input type="text" class="form-control" id="buscarInsumo" placeholder="Buscar por nombre de insumo" autocomplete="off">
+        <div id="sugerenciasInsumosBusqueda" class="list-group position-absolute w-100"></div>
+        <input type="hidden" id="id_insumo_busqueda">
+      </div>
+
+      <div class="col-md-2 d-flex align-items-end">
+        <button class="btn btn-secondary w-100" onclick="buscarHistorial()">Buscar</button>
+      </div>
+
+      <div class="col-md-2 d-flex align-items-end">
+        <button class="btn btn-outline-primary w-100" onclick="verUltimos100Compras()">Ver todos</button>
+      </div>
+    </div>
+
+    <hr class="my-4">
+
+    <!-- Buscar por Proveedor -->
+    <div class="row g-3">
+      <div class="col-md-6 position-relative">
+        <label for="buscarProveedorInput" class="form-label">Nombre del Proveedor</label>
+        <input type="text" class="form-control" id="buscarProveedorInput" placeholder="Buscar por proveedor" autocomplete="off">
+        <div id="sugerenciasProveedoresBusqueda" class="list-group position-absolute w-100"></div>
+        <input type="hidden" id="id_proveedor_busqueda">
+      </div>
+
+      <div class="col-md-2 d-flex align-items-end">
+        <button class="btn btn-secondary w-100" onclick="buscarPorProveedor()">Buscar proveedor</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<h3>📜 Historial de Compras</h3>
+<table class="table table-striped table-hover" id="tblCompras">
+>>>>>>> d68dfeb (Actualizar compras: mostrar últimas 20, mejoras de frontend y backend)
   <thead>
     <tr>
       <th>ID</th>
@@ -118,8 +215,32 @@ const currentUserIsAdmin = JSON.parse('{{ current_user_is_admin | tojson }}');
   </div>
 </div>
 
+<<<<<<< HEAD
 <script>
 window.addEventListener('DOMContentLoaded', () => {
+=======
+
+
+
+
+
+
+<script>
+let paginaActual = 1;
+
+async function cargarHistorialCompras() {
+  const res = await fetch(`/api/v1/compras/?page=${paginaActual}&per_page=20`);
+  if (!res.ok) {
+    alert('Error al cargar compras');
+    return;
+  }
+
+  const data = await res.json();
+
+  // data = { items, total, page, pages }
+  renderTablaCompras(data.items);
+}
+>>>>>>> d68dfeb (Actualizar compras: mostrar últimas 20, mejoras de frontend y backend)
 
   let paginaActual = 1;
 
@@ -132,10 +253,34 @@ window.addEventListener('DOMContentLoaded', () => {
     const contenedor = document.getElementById(sugerenciasId);
     if (!input || !hidden || !contenedor) return;
 
+<<<<<<< HEAD
     input.addEventListener('input', async () => {
       const q = input.value.trim();
       contenedor.innerHTML = '';
       hidden.value = '';
+=======
+  data.forEach(c => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${c.id_compra}</td>
+        <td>${c.fecha}</td>
+        <td>${c.proveedor || ''}</td>
+        <td>${c.insumo || ''}</td>
+        <td>${c.cantidad}</td>
+        <td>$${Number(c.precio_unitario || 0).toFixed(2)}</td>
+        <td>$${Number(c.total || 0).toFixed(2)}</td>
+        <td>
+          <button class="btn btn-sm btn-warning"
+            onclick="abrirModalEditar(${c.id_compra},${Number(c.cantidad || 0)},${Number(c.precio_unitario || 0)},'${c.fecha || ''}')"">
+            Editar
+          </button>
+          <button
+            class="btn btn-sm ms-2 btn-revisado ${c.revisado ? 'activo' : ''}"
+            onclick="marcarRevisado(${c.id_compra})"
+            ${c.revisado ? 'disabled' : ''}>
+            Revisado
+          </button>
+>>>>>>> d68dfeb (Actualizar compras: mostrar últimas 20, mejoras de frontend y backend)
 
       if (q.length < 2) return;
 
@@ -150,6 +295,7 @@ window.addEventListener('DOMContentLoaded', () => {
           btn.className = 'list-group-item list-group-item-action';
           btn.textContent = item.nombre;
 
+<<<<<<< HEAD
           btn.onclick = () => {
             input.value = item.nombre;
             if ('id_insumo' in item) hidden.value = item.id_insumo;
@@ -158,13 +304,239 @@ window.addEventListener('DOMContentLoaded', () => {
           };
           contenedor.appendChild(btn);
         });
+=======
+
+// -----------------------------
+// Autocomplete dinámico para proveedores
+// -----------------------------
+const buscadorProveedor = document.getElementById('inputProveedor');
+const sugerenciasProveedores = document.getElementById('sugerenciasProveedores');
+
+buscadorProveedor.addEventListener('input', async () => {
+  const q = buscadorProveedor.value.trim();
+  sugerenciasProveedores.innerHTML = '';
+  document.getElementById('id_proveedor').value = '';
+
+  if (q.length < 2) return; // buscar solo si hay 2+ caracteres
+
+  try {
+    const res = await fetch(`/api/v1/proveedores/buscar?q=${encodeURIComponent(q)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+
+    data.forEach(p => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'list-group-item list-group-item-action';
+      item.textContent = p.nombre;
+      item.onclick = () => {
+        buscadorProveedor.value = p.nombre;
+        document.getElementById('id_proveedor').value = p.id_proveedor;
+        sugerenciasProveedores.innerHTML = '';
+      };
+      sugerenciasProveedores.appendChild(item);
+    });
+  } catch (e) {
+    console.error('Error buscando proveedores:', e);
+  }
+});
+
+// Cerrar sugerencias si se hace click afuera
+document.addEventListener('click', e => {
+  if (!sugerenciasProveedores.contains(e.target) && e.target !== buscadorProveedor) {
+    sugerenciasProveedores.innerHTML = '';
+  }
+});
+
+
+
+
+
+
+// -----------------------------
+// Autocomplete dinámico para buscar insumo
+// -----------------------------
+const buscadorInsumoBusqueda = document.getElementById('buscarInsumo');
+const sugerenciasInsumosBusqueda = document.getElementById('sugerenciasInsumosBusqueda');
+
+buscadorInsumoBusqueda.addEventListener('input', async () => {
+  const q = buscadorInsumoBusqueda.value.trim();
+  sugerenciasInsumosBusqueda.innerHTML = '';
+  document.getElementById('id_insumo_busqueda').value = '';
+
+  if (q.length < 2) return;
+
+  try {
+    const res = await fetch(`/api/v1/insumos/buscar?q=${encodeURIComponent(q)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+
+    data.forEach(i => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'list-group-item list-group-item-action';
+      item.textContent = i.nombre;
+      item.onclick = () => {
+        buscadorInsumoBusqueda.value = i.nombre;
+        document.getElementById('id_insumo_busqueda').value = i.id_insumo;
+        sugerenciasInsumosBusqueda.innerHTML = '';
+      };
+      sugerenciasInsumosBusqueda.appendChild(item);
+    });
+  } catch (e) {
+    console.error('Error buscando insumos:', e);
+  }
+});
+
+// Cerrar sugerencias si se hace click afuera
+document.addEventListener('click', e => {
+  if (!sugerenciasInsumosBusqueda.contains(e.target) && e.target !== buscadorInsumoBusqueda) {
+    sugerenciasInsumosBusqueda.innerHTML = '';
+  }
+});
+
+
+
+
+
+
+// -----------------------------
+// Autocomplete dinámico para insumos
+// -----------------------------
+const buscadorInsumo = document.getElementById('inputInsumo');
+const sugerenciasInsumos = document.getElementById('sugerenciasInsumos');
+
+buscadorInsumo.addEventListener('input', async () => {
+  const q = buscadorInsumo.value.trim();
+  sugerenciasInsumos.innerHTML = '';
+  document.getElementById('id_insumo').value = '';
+
+  if (q.length < 2) return; // buscar solo si hay 2+ caracteres
+
+  try {
+    const res = await fetch(`/api/v1/insumos/buscar?q=${encodeURIComponent(q)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+
+    data.forEach(i => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'list-group-item list-group-item-action';
+      item.textContent = i.nombre;
+      item.onclick = () => {
+        buscadorInsumo.value = i.nombre;
+        document.getElementById('id_insumo').value = i.id_insumo;
+        sugerenciasInsumos.innerHTML = '';
+      };
+      sugerenciasInsumos.appendChild(item);
+    });
+  } catch (e) {
+    console.error('Error buscando insumos:', e);
+  }
+});
+
+// Cerrar sugerencias si se hace click afuera
+document.addEventListener('click', e => {
+  if (!sugerenciasInsumos.contains(e.target) && e.target !== buscadorInsumo) {
+    sugerenciasInsumos.innerHTML = '';
+  }
+});
+
+
+// -----------------------------
+// Autocomplete dinámico para buscar proveedor
+// -----------------------------
+const buscadorProveedorBusqueda = document.getElementById('buscarProveedorInput');
+const sugerenciasProveedoresBusqueda = document.getElementById('sugerenciasProveedoresBusqueda');
+
+buscadorProveedorBusqueda.addEventListener('input', async () => {
+  const q = buscadorProveedorBusqueda.value.trim();
+  sugerenciasProveedoresBusqueda.innerHTML = '';
+  document.getElementById('id_proveedor_busqueda').value = '';
+
+  if (q.length < 2) return; // buscar solo si hay 2+ caracteres
+
+  try {
+    const res = await fetch(`/api/v1/proveedores/buscar?q=${encodeURIComponent(q)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+
+    data.forEach(p => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'list-group-item list-group-item-action';
+      item.textContent = p.nombre;
+      item.onclick = () => {
+        buscadorProveedorBusqueda.value = p.nombre;
+        document.getElementById('id_proveedor_busqueda').value = p.id_proveedor;
+        sugerenciasProveedoresBusqueda.innerHTML = '';
+      };
+      sugerenciasProveedoresBusqueda.appendChild(item);
+    });
+  } catch (e) {
+    console.error('Error buscando proveedores:', e);
+  }
+});
+
+// Cerrar sugerencias si se hace click afuera
+document.addEventListener('click', e => {
+  if (!sugerenciasProveedoresBusqueda.contains(e.target) && e.target !== buscadorProveedorBusqueda) {
+    sugerenciasProveedoresBusqueda.innerHTML = '';
+  }
+});
+
+
+
+
+async function cargarAutocompleteInsumos() {
+  const res = await fetch('/api/v1/compras/insumos');
+  if (!res.ok) return;
+  const data = await res.json();
+>>>>>>> d68dfeb (Actualizar compras: mostrar últimas 20, mejoras de frontend y backend)
 
       } catch (e) { console.error('Error autocomplete:', e); }
     });
 
+<<<<<<< HEAD
     document.addEventListener('click', e => {
       if (!contenedor.contains(e.target) && e.target !== input) contenedor.innerHTML = '';
     });
+=======
+
+async function verUltimos100Compras() {
+  const res = await fetch('/api/v1/compras/?page=1&per_page=100'); // pedimos 100 directamente
+  if (!res.ok) {
+    alert('Error al cargar compras');
+    return;
+  }
+
+  const data = await res.json();
+  renderTablaCompras(data.items); // renderizamos los 100 últimos
+}
+
+
+
+
+async function actualizarCompra(id_compra, nuevaCantidad, nuevoPrecio, nuevaFecha) {
+  const body = {
+    cantidad: nuevaCantidad,
+    precio_unitario: nuevoPrecio,
+    fecha: nuevaFecha
+  };
+
+  const res = await fetch(`/api/v1/compras/${id_compra}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  if (res.ok) {
+    await cargarHistorialCompras();
+    alert('Compra actualizada correctamente');
+  } else {
+    const err = await res.json();
+    alert('Error al actualizar compra: ' + (err.error || 'Desconocido'));
+>>>>>>> d68dfeb (Actualizar compras: mostrar últimas 20, mejoras de frontend y backend)
   }
 
   // -----------------------------
@@ -175,6 +547,7 @@ window.addEventListener('DOMContentLoaded', () => {
   crearAutocomplete('buscarProveedor','id_proveedor_busqueda','/api/v1/proveedores/buscar','sugerenciasProveedoresBusqueda');
   crearAutocomplete('buscarInsumo','id_insumo_busqueda','/api/v1/insumos/buscar','sugerenciasInsumosBusqueda');
 
+<<<<<<< HEAD
   // -----------------------------
   // Funciones de historial y render
   // -----------------------------
@@ -183,6 +556,71 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!res.ok) { alert('Error al cargar compras'); return; }
     const data = await res.json();
     renderTablaCompras(data.items || data);
+=======
+
+
+document.getElementById('inputInsumo').addEventListener('change', e => {
+  const nombre = e.target.value;
+  document.getElementById('id_insumo').value =
+    insumosMap[nombre] || '';
+});
+
+
+
+
+
+
+async function buscarHistorial() {
+  const nombre = document.getElementById('buscarInsumo').value.trim();
+  if (!nombre) return;
+
+  const res = await fetch(`/api/v1/compras/buscar?nombre=${encodeURIComponent(nombre)}`);
+  if (!res.ok) return;
+
+  const data = await res.json();
+  renderTablaCompras(data);
+}
+
+
+
+async function cargarProveedoresBusqueda() {
+  const res = await fetch('/api/v1/proveedores/');
+  if (!res.ok) return;
+
+  const data = await res.json();
+  const datalist = document.getElementById('proveedoresLista');
+  datalist.innerHTML = '';
+
+  data.forEach(p => {
+    datalist.innerHTML += `
+      <option value="${p.nombre}"></option>
+    `;
+  });
+}
+
+
+async function buscarPorProveedor() {
+  const nombre = document.getElementById('buscarProveedorInput').value.trim();
+  if (!nombre) return;
+
+  const res = await fetch(`/api/v1/compras/proveedor/${encodeURIComponent(nombre)}`);
+  if (!res.ok) return;
+
+  const data = await res.json();
+  renderTablaCompras(data);
+}
+
+
+
+
+async function marcarRevisado(id) {
+  const res = await fetch(`/api/v1/compras/${id}/revisar`, { method: 'PUT'});
+
+  if (res.ok) {
+    await cargarHistorialCompras();
+  } else {
+    alert('No se pudo marcar como revisada');
+>>>>>>> d68dfeb (Actualizar compras: mostrar últimas 20, mejoras de frontend y backend)
   }
 
   function renderTablaCompras(data) {
@@ -270,6 +708,7 @@ window.addEventListener('DOMContentLoaded', () => {
     bootstrap.Modal.getInstance(document.getElementById('modalEditarCompra')).hide();
   });
 
+<<<<<<< HEAD
   // -----------------------------
   // Revisado / Confirmado
   // -----------------------------
@@ -306,7 +745,17 @@ window.addEventListener('DOMContentLoaded', () => {
   // Cargar al iniciar
   // -----------------------------
   cargarHistorialCompras();
+=======
+window.addEventListener('load', async () => {
+
+  // Cargar historial de compras al final (podría tardar más)
+  await cargarHistorialCompras();
+>>>>>>> d68dfeb (Actualizar compras: mostrar últimas 20, mejoras de frontend y backend)
 });
+
 </script>
 
 {% endblock %}
+
+
+

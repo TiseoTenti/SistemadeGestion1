@@ -58,7 +58,7 @@
 
 <script>
 async function cargarDashboard() {
-  const res = await fetch('/api/v1/insumos/');
+  const res = await fetch('/api/v1/insumos/dashboard');
   if (!res.ok) return;
 
   const insumos = await res.json();
@@ -76,7 +76,6 @@ async function cargarDashboard() {
 
     let estado = '';
     let clase = '';
-
     if (cantidad < minimo) {
       estado = 'Crítico';
       clase = 'text-danger';

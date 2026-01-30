@@ -1,20 +1,37 @@
-# Entorno virtual
+# ===== Python =====
 venv/
-
-# Cache de Python
 __pycache__/
+**/__pycache__/
 *.pyc
 *.pyo
+*.pyd
 
-# Base de datos local
-*.sqlite3
-
-# Variables de entorno
+# ===== Flask =====
+instance/
 .env
+.env.*
 
-# Archivos de sistema
+# ===== Databases =====
+*.sqlite3
+*.db
+*.sql
+
+# ===== Backups =====
+backup_*.sql
+backup_*.gz
+backup_*.tar
+
+# ===== Logs =====
+*.log
+
+# ===== Docker =====
+*.pid
+
+# ===== IDEs =====
+.vscode/
+.idea/
+
+# ===== OS =====
 .DS_Store
 Thumbs.db
-
-
 

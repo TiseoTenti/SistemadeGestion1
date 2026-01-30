@@ -1,64 +1,99 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Insumos</h2>
+<h2 class="mb-4">📦 Gestión de Insumos</h2>
 
-<div class="card mb-3">
+<!-- Card: Crear / Editar Insumo -->
+<div class="card mb-4 shadow-sm">
   <div class="card-body">
+    <h5 class="card-title mb-3">➕ Crear / Editar Insumo</h5>
+
     <form id="formInsumo">
-      <div class="row g-2">
-        <div class="col-md-3"><input class="form-control" name="nombre" placeholder="Nombre" required></div>
-        <div class="col-md-2"><input class="form-control" name="cantidad" type="number" step="0.01" placeholder="Cantidad" required></div>
-        <div class="col-md-2"><select class="form-select" name="unidad_medida" required><option value="">Selecc. unidad</option><option value="litro">Litro</option><option value="metro">Metro</option><option value="kilo">Kilo</option><option value="unidad">Unidad</option></select></div>
-        <div class="col-md-2"><input class="form-control" name="stock_minimo" type="number" step="0.01" placeholder="Stock mínimo"></div></div>
-        <div class="mt-2"><button class="btn btn-primary">Crear Insumo</button></div>
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Nombre</label>
+          <input class="form-control" name="nombre" placeholder="Nombre" required>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Cantidad</label>
+          <input class="form-control" name="cantidad" type="number" step="0.01" placeholder="Cantidad" required>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Unidad de Medida</label>
+          <select class="form-select" name="unidad_medida" required>
+            <option value="">Seleccionar</option>
+            <option value="litro">Litro</option>
+            <option value="metro">Metro</option>
+            <option value="kilo">Kilo</option>
+            <option value="unidad">Unidad</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Stock mínimo</label>
+          <input class="form-control" name="stock_minimo" type="number" step="0.01" placeholder="Stock mínimo">
+        </div>
+
+        <div class="col-md-3 d-flex align-items-end">
+          <button class="btn btn-primary w-100">Guardar Insumo</button>
+        </div>
+      </div>
     </form>
   </div>
 </div>
 
+<!-- Sección de Búsqueda -->
+<h3 class="mb-3">🔍 Búsqueda de Insumos</h3>
 
-<div class="row mb-3">
-  <div class="col-md-6 position-relative">
-    <input
-      type="text"
-      id="buscadorInsumo"
-      class="form-control"
-      placeholder="Buscar insumo por nombre..."
-      autocomplete="off"
-    >
-    <div id="sugerenciasInsumos" class="list-group position-absolute w-100"></div>
-  </div>
+<div class="card mb-4 shadow-sm">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-6 position-relative">
+        <label class="form-label">Nombre del Insumo</label>
+        <input
+          type="text"
+          id="buscadorInsumo"
+          class="form-control"
+          placeholder="Buscar insumo por nombre..."
+          autocomplete="off"
+        >
+        <div id="sugerenciasInsumos" class="list-group position-absolute w-100"></div>
+      </div>
 
-  <div class="col-md-3">
-    <button class="btn btn-primary w-100" onclick="buscarInsumo()">
-      Buscar
-    </button>
-  </div>
+      <div class="col-md-3 d-flex align-items-end">
+        <button class="btn btn-primary w-100" onclick="buscarInsumo()">Buscar</button>
+      </div>
 
-  <div class="col-md-3">
-    <button class="btn btn-secondary w-100" onclick="cargarInsumos()">
-      Ver todos
-    </button>
+      <div class="col-md-3 d-flex align-items-end">
+        <button class="btn btn-outline-secondary w-100" onclick="verUltimos100()">Ver todos</button>
+      </div>
+    </div>
   </div>
 </div>
 
 
-
-
-
+<h2>Insumos</h2>
+<!-- Tabla de insumos -->
 <table class="table table-striped" id="tblInsumos">
-  <thead><tr><th>ID</th><th>Nombre</th><th>Cantidad</th><th>Unidad</th><th>Stock Min</th><th>Acciones</th></tr></thead>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Nombre</th>
+      <th>Cantidad</th>
+      <th>Unidad</th>
+      <th>Stock Min</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
   <tbody></tbody>
 </table>
 
 <script>
-
-
 // -----------------------------
-// Cargar insumos
+// Función para renderizar la tabla con edición inline
 // -----------------------------
-async function cargarInsumos(){
-  const res = await fetch('/api/v1/insumos/');
-  const data = await res.json();
+function renderConEdicion(data){
   const tbody = document.querySelector('#tblInsumos tbody');
   tbody.innerHTML = '';
 
@@ -98,22 +133,37 @@ async function cargarInsumos(){
       </tr>
     `;
   });
-} 
-
-
-// Funciones auxiliares
-function toggleEditar(id) {
-  const fila = document.getElementById(`edit-${id}`);
-  fila.classList.toggle('d-none');
 }
 
-
-
+// -----------------------------
+// Cargar insumos críticos al inicio
+// -----------------------------
+async function cargarInsumos(){
+  const res = await fetch('/api/v1/insumos/criticos');
+  const data = await res.json();
+  renderConEdicion(data);
+}
 
 // -----------------------------
-// Guardar la edicion de los insumos
+// Ver últimos 100 insumos
 // -----------------------------
-async function guardarEdicion(id) {
+async function verUltimos100(){
+  const res = await fetch('/api/v1/insumos/ultimos100');
+  const data = await res.json();
+  renderConEdicion(data);
+}
+
+// -----------------------------
+// Mostrar/ocultar fila de edición
+// -----------------------------
+function toggleEditar(id){
+  document.getElementById(`edit-${id}`).classList.toggle('d-none');
+}
+
+// -----------------------------
+// Guardar edición de insumo
+// -----------------------------
+async function guardarEdicion(id){
   const body = {
     nombre: document.getElementById(`nombre-${id}`).value,
     cantidad: parseFloat(document.getElementById(`cantidad-${id}`).value),
@@ -122,94 +172,63 @@ async function guardarEdicion(id) {
   };
 
   const res = await fetch(`/api/v1/insumos/${id}`, {
-    method: 'PUT',
-    headers: {'Content-Type':'application/json'},
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
     body: JSON.stringify(body)
   });
 
-  if (!res.ok) {
-    alert('Error al actualizar insumo');
-    return;
-  }
+  if(!res.ok){ alert('Error al actualizar insumo'); return; }
 
   toggleEditar(id);
   cargarInsumos();
 }
 
-
-
 // -----------------------------
-// Buscador
+// Buscador de insumos
 // -----------------------------
 const buscadorInsumo = document.getElementById('buscadorInsumo');
 const sugerenciasInsumos = document.getElementById('sugerenciasInsumos');
 
-buscadorInsumo.addEventListener('input', async () => {
+buscadorInsumo.addEventListener('input', async ()=>{
   const q = buscadorInsumo.value.trim();
   sugerenciasInsumos.innerHTML = '';
   delete buscadorInsumo.dataset.id;
 
-  if (q.length < 2) return;
+  if(q.length < 2) return;
 
   const res = await fetch(`/api/v1/insumos/buscar?q=${encodeURIComponent(q)}`);
   const data = await res.json();
 
-  data.forEach(i => {
+  data.forEach(i=>{
     const item = document.createElement('button');
     item.type = 'button';
     item.className = 'list-group-item list-group-item-action';
     item.textContent = i.nombre;
-
-    item.onclick = () => {
+    item.onclick = ()=>{
       buscadorInsumo.value = i.nombre;
       buscadorInsumo.dataset.id = i.id_insumo;
       sugerenciasInsumos.innerHTML = '';
     };
-
     sugerenciasInsumos.appendChild(item);
   });
 });
 
-
-
-// Buscar y editar
-async function buscarInsumo() {
+// -----------------------------
+// Buscar insumo seleccionado
+// -----------------------------
+async function buscarInsumo(){
   const id = buscadorInsumo.dataset.id;
-  if (!id) { alert('Seleccione un insumo de la lista'); return; }
+  if(!id){ alert('Seleccione un insumo de la lista'); return; }
 
   const res = await fetch(`/api/v1/insumos/${id}`);
   const i = await res.json();
-
-  const tbody = document.querySelector('#tblInsumos tbody');
-  tbody.innerHTML = `
-    <tr>
-      <td>${i.id_insumo}</td>
-      <td>${i.nombre}</td>
-      <td>${i.cantidad}</td>
-      <td>${i.unidad_medida}</td>
-      <td>${i.stock_minimo}</td>
-      <td><button class="btn btn-sm btn-warning" onclick="editarInsumo(${i.id_insumo})">Editar</button></td>
-    </tr>
-  `;
+  renderConEdicion([i]);
 }
 
-
-
-async function editarInsumo(id){
-  const res = await fetch(`/api/v1/insumos/${id}`);
-  const i = await res.json();
-
-  const form = document.getElementById('formInsumo');
-  form.nombre.value = i.nombre;
-  form.cantidad.value = i.cantidad;
-  form.unidad_medida.value = i.unidad_medida;
-  form.stock_minimo.value = i.stock_minimo;
-
-  form.dataset.editando = id;
-}
-
-// <-- Listener del formulario FUERA de cargarInsumos()
-document.getElementById('formInsumo').addEventListener('submit', async (e)=>{
+// -----------------------------
+// Crear / Editar insumo desde formulario
+// -----------------------------
+document.getElementById('formInsumo').addEventListener('submit', async e=>{
   e.preventDefault();
   const form = e.target;
   const fd = new FormData(form);
@@ -219,18 +238,16 @@ document.getElementById('formInsumo').addEventListener('submit', async (e)=>{
   body.stock_minimo = parseFloat(body.stock_minimo || 0);
 
   if(form.dataset.editando){
-    // UPDATE
     await fetch(`/api/v1/insumos/${form.dataset.editando}`, {
-      method: 'PUT',
-      headers: {'Content-Type':'application/json'},
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
       body: JSON.stringify(body)
     });
     delete form.dataset.editando;
   } else {
-    // CREATE
     await fetch('/api/v1/insumos/', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
       body: JSON.stringify(body)
     });
   }
@@ -239,7 +256,9 @@ document.getElementById('formInsumo').addEventListener('submit', async (e)=>{
   cargarInsumos();
 });
 
-// Cargar tabla al inicio
+// -----------------------------
+// Cargar insumos críticos al cargar la página
+// -----------------------------
 window.addEventListener('load', cargarInsumos);
 </script>
 {% endblock %}

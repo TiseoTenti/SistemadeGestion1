@@ -94,3 +94,59 @@ def actualizar_insumo(id_insumo):
 def listar_alertas():
     alertas = AlertaStock.query.filter_by(estado='Pendiente').all()
     return jsonify([a.to_dict() for a in alertas])
+
+
+@insumos_bp.route('/dashboard', methods=['GET'])
+def insumos_dashboard():
+    """
+    Devuelve solo insumos con stock <= 120% del stock mínimo
+    (Crítico + Alerta)
+    """
+    insumos = Insumo.query.filter(
+        Insumo.cantidad <= (Insumo.stock_minimo * 1.2)
+    ).order_by(Insumo.nombre).all()
+
+    return jsonify([
+        {
+            "id_insumo": i.id_insumo,
+            "nombre": i.nombre,
+            "cantidad": float(i.cantidad),
+            "stock_minimo": float(i.stock_minimo)
+        }
+        for i in insumos
+    ])
+
+
+
+@insumos_bp.route('/ultimos100', methods=['GET'])
+def ultimos_100_insumos():
+    insumos = (
+        Insumo.query
+        .order_by(Insumo.id_insumo.desc())
+        .limit(100)
+        .all()
+    )
+
+    return jsonify([i.to_dict() for i in insumos])
+
+
+
+
+@insumos_bp.route('/criticos', methods=['GET'])
+def insumos_criticos():
+    insumos = (
+        Insumo.query
+        .filter(Insumo.cantidad <= (Insumo.stock_minimo * 1.2))
+        .order_by(Insumo.cantidad.asc())
+        .all()
+    )
+
+    return jsonify([i.to_dict() for i in insumos])
+
+
+
+
+
+
+
+

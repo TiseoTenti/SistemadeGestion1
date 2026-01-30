@@ -5,11 +5,16 @@ from datetime import datetime
 from decimal import Decimal
 from flask_login import current_user, login_required
 from flask import render_template
+from sqlalchemy.orm import joinedload
+from models import Compra
 
 compras_bp = Blueprint('compras_bp', __name__, url_prefix='/api/v1/compras')
 
+
+
 @compras_bp.route('/', methods=['GET'])
 def listar_compras():
+<<<<<<< HEAD
     compras = (
         db.session.query(Compra)
         .join(Proveedor)
@@ -19,6 +24,46 @@ def listar_compras():
         .all()
     )
     return jsonify([c.to_dict() for c in compras])
+=======
+    """
+    Devuelve compras paginadas. 
+    Parámetros opcionales: page (default 1), per_page (default 20)
+    """
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 20))
+    except ValueError:
+        page = 1
+        per_page = 20
+
+    # Query ordenada por ID descendente (últimas compras primero)
+    pagination = Compra.query.order_by(Compra.id_compra.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+
+    items = []
+    for c in pagination.items:
+        items.append({
+            "id_compra": c.id_compra,
+            "fecha": c.fecha.strftime("%Y-%m-%d"),
+            "proveedor": c.proveedor.nombre if c.proveedor else None,
+            "insumo": c.insumo.nombre if c.insumo else None,
+            "cantidad": float(c.cantidad),
+            "precio_unitario": float(c.precio_unitario),
+            "total": float(c.total),
+            "revisado": c.revisado,
+            "confirmado": c.confirmado
+        })
+
+    return jsonify({
+        "items": items,
+        "total": pagination.total,
+        "page": pagination.page,
+        "per_page": pagination.per_page,
+        "pages": pagination.pages
+    })
+
+>>>>>>> d68dfeb (Actualizar compras: mostrar últimas 20, mejoras de frontend y backend)
 
 
 
@@ -36,13 +81,17 @@ def buscar_compras_por_insumo():
 
     if not nombre:
         return jsonify([])
-
+    
     compras = (
-        db.session.query(Compra)
-        .join(Insumo)
-        .filter(Insumo.nombre.ilike(f"%{nombre}%"))
-        .order_by(Compra.id_compra.desc())
-        .all()
+    db.session.query(Compra)
+    .options(
+        joinedload(Compra.proveedor),
+        joinedload(Compra.insumo)
+    )
+    .join(Insumo)
+    .filter(Insumo.nombre.ilike(f"%{nombre}%"))
+    .order_by(Compra.id_compra.desc())
+    .all()
     )
 
     return jsonify([c.to_dict() for c in compras])
@@ -123,12 +172,17 @@ def crear_compra():
 @compras_bp.route('/proveedor/<string:nombre>', methods=['GET'])
 def compras_por_proveedor(nombre):
     compras = (
-        db.session.query(Compra)
-        .join(Proveedor)
-        .filter(Proveedor.nombre.ilike(f"%{nombre}%"))
-        .order_by(Compra.id_compra.desc())
-        .all()
+    db.session.query(Compra)
+    .options(
+        joinedload(Compra.proveedor),
+        joinedload(Compra.insumo)
     )
+    .join(Proveedor)
+    .filter(Proveedor.nombre.ilike(f"%{nombre}%"))
+    .order_by(Compra.id_compra.desc())
+    .all()
+    )
+
     return jsonify([c.to_dict() for c in compras])
 
 

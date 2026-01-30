@@ -3,7 +3,7 @@ from flask import Flask, render_template,redirect, url_for, request, flash
 from flask_login import LoginManager, login_required, current_user 
 from models import db, User, Insumo, TanqueInsumo, TanqueFabricado
 from routes import register_blueprints  # Se registra api_user y demás blueprints
-
+from sqlalchemy.exc import IntegrityError
 
 from datetime import datetime
 from decimal import Decimal
@@ -40,15 +40,8 @@ def create_app():
     # Registrar blueprints
     register_blueprints(app)
 
-    # Crear DB y admin si no existe
-    with app.app_context():
-        db.create_all()
-        if not User.query.filter_by(username='admin').first():
-            admin = User(username='admin', role='administrador')
-            admin.set_password('admin123')
-            db.session.add(admin)
-            db.session.commit()
-            print("🟢 Admin creado: usuario='admin', pass='admin123'")
+    
+
 
     # ------------------- RUTAS PROTEGIDAS -------------------
     @app.route('/')
@@ -104,4 +97,4 @@ app = create_app()
 # EJECUCIÓN
 # ------------------------------------------------------------
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

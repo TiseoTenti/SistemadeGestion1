@@ -1,9 +1,9 @@
 # routes/api_tanques.py
 from flask import Blueprint, request, jsonify
-from models import db, TanqueFabricado, TanqueInsumo, Insumo
+from models import db, TanqueFabricado, TanqueInsumo, Insumo, Compra
 from decimal import Decimal
 from datetime import datetime
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.pagesizes import letter, landscape
 from reportlab.pdfgen import canvas
 from flask import send_file
 import io
@@ -107,10 +107,12 @@ def buscar_clientes():
 
     return jsonify([c[0] for c in clientes if c[0]])
 
+
+
+
 @tanques_bp.route('/<int:id_tanque>/finalizar', methods=['PUT'])
 @login_required
 def finalizar_tanque(id_tanque):
-
     if current_user.role != 'administrador':
         return jsonify({'error': 'Solo el administrador puede finalizar tanques'}), 403
 
@@ -131,24 +133,21 @@ def finalizar_tanque(id_tanque):
 
     # Generar PDF en memoria
     buffer = io.BytesIO()
-    pdf = canvas.Canvas(buffer, pagesize=letter)
-    width, height = letter
+    pdf = canvas.Canvas(buffer, pagesize=landscape(letter))
+    width, height = landscape(letter)
     pdf.setTitle(f"Tanque_{tanque.id_tanque}_Finalizado")
-
-    # Título e info
     pdf.setFont("Helvetica-Bold", 16)
-    pdf.drawCentredString(width / 2, height - 50, f"Informe de Tanque Fabricado ID {tanque.id_tanque}")
+    pdf.drawCentredString(width / 2, height - 50, f"Informe de Tanque ID {tanque.id_tanque}")
     pdf.setFont("Helvetica", 12)
-    pdf.drawString(50, height - 80, f"Cliente: {tanque.cliente}")
-    pdf.drawString(50, height - 95, f"Modelo: {tanque.modelo}")
+    pdf.drawString(50, height - 80, f"Cliente: {tanque.cliente or '-'}")
+    pdf.drawString(50, height - 95, f"Modelo: {tanque.modelo or '-'}")
     pdf.drawString(50, height - 110, f"Fecha: {tanque.fecha.strftime('%Y-%m-%d')}")
     pdf.drawString(50, height - 125, f"Costo Total: ${float(costo_total):.2f}")
 
-    # Tabla
     y_start = height - 150
     row_height = 20
-    x_positions = [50, 120, 220, 320, 400, 480]
-    headers = ["Fecha", "Cantidad", "Insumo", "Precio Unitario", "Precio Total", "Proveedor"]
+    x_positions = [40, 110, 165, 395, 480, 560, 640]
+    headers = ["Fecha salida","Cantidad","Insumo","Precio Unitario","Precio Total","Proveedor","Fecha compra"]
 
     def dibujar_fila(y, valores, bold=False):
         pdf.setFont("Helvetica-Bold" if bold else "Helvetica", 10)
@@ -166,21 +165,31 @@ def finalizar_tanque(id_tanque):
             y = height - 50
             dibujar_fila(y, headers, bold=True)
             y -= row_height
-        fecha = tanque.fecha.strftime('%Y-%m-%d') if tanque.fecha else '-'
+
+        fecha_salida = ti.fecha_registro.strftime('%Y-%m-%d') if ti.fecha_registro else '-'
         cantidad = f"{float(ti.cantidad_usada):.2f}"
-        insumo = ti.insumo.nombre
+        insumo_nombre = ti.insumo.nombre if ti.insumo else '-'
         precio_unitario = f"${float(ti.costo_unitario):.2f}"
         precio_total = f"${float(ti.cantidad_usada * ti.costo_unitario):.2f}"
-        proveedor_nombre = (
-        ti.insumo.proveedor_insumo[0].proveedor.nombre
-        if ti.insumo.proveedor_insumo else '-'
-    )
 
-        dibujar_fila(y, [fecha, cantidad, insumo, precio_unitario, precio_total, proveedor_nombre])
+        proveedor_nombre = '-'
+        fecha_compra = '-'
+
+        if ti.insumo and getattr(ti.insumo, 'proveedor_insumo', None):
+            prov_list = ti.insumo.proveedor_insumo
+            if prov_list:
+                prov = prov_list[0]
+                proveedor_nombre = prov.proveedor.nombre if prov.proveedor else '-'
+                ultima_compra = Compra.query.filter_by(
+                    id_insumo=ti.insumo.id_insumo,
+                    id_proveedor=prov.id_proveedor
+                ).order_by(Compra.fecha.desc()).first()
+                if ultima_compra:
+                    fecha_compra = ultima_compra.fecha.strftime('%Y-%m-%d')
+
+        dibujar_fila(y, [fecha_salida, cantidad, insumo_nombre, precio_unitario, precio_total, proveedor_nombre, fecha_compra])
         y -= row_height
 
-    pdf.line(x_positions[0], y + row_height, x_positions[-1] + 80, y + row_height)
-    pdf.showPage()
     pdf.save()
     buffer.seek(0)
 
@@ -190,6 +199,12 @@ def finalizar_tanque(id_tanque):
         download_name=f"Tanque_{tanque.id_tanque}_Finalizado.pdf",
         mimetype='application/pdf'
     )
+
+
+
+
+
+
 
 
 

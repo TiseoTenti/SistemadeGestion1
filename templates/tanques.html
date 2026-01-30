@@ -34,30 +34,49 @@
   <div><button class="btn btn-success">Guardar Tanque</button></div>
   </form>
 
-<div class="row mb-3">
-  <div class="col-md-6 position-relative">
-    <input
-      type="text"
-      id="buscadorCliente"
-      class="form-control"
-      placeholder="Cliente..."
-      autocomplete="off"
-    >
-    <div id="sugerenciasClientes" class="list-group position-absolute w-100"></div>
-  </div>
 
-  <div class="col-md-3">
-    <button class="btn btn-primary w-100" onclick="buscarTanques()">
-      Buscar
-    </button>
-  </div>
 
-  <div class="col-md-3">
-    <button class="btn btn-secondary w-100" onclick="cargarTanques()">
-      Ver todos
-    </button>
+
+
+
+
+<hr>
+<!-- Sección de Búsqueda -->
+<h3 class="mb-3">🔍 Búsqueda de trabajos</h3>
+
+<div class="card mb-4 shadow-sm">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-6 position-relative">
+        <label class="form-label">Cliente</label>
+        <input
+          type="text"
+          id="buscadorCliente"
+          class="form-control"
+          placeholder="Cliente..."
+          autocomplete="off"
+        >
+        <div id="sugerenciasClientes" class="list-group position-absolute w-100"></div>
+      </div>
+
+      <div class="col-md-3 d-flex align-items-end">
+        <button class="btn btn-primary w-100" onclick="buscarTanques()">
+          Buscar
+        </button>
+      </div>
+
+      <div class="col-md-3 d-flex align-items-end">
+        <button class="btn btn-outline-secondary w-100" onclick="cargarTanques()">
+          Ver todos
+        </button>
+      </div>
+    </div>
   </div>
 </div>
+
+
+
+
 
 
 
@@ -318,7 +337,7 @@ async function finalizarTanque(id) {
 
     const res = await fetch(`/api/v1/tanques/${id}/finalizar`, { method: 'PUT' });
     if (!res.ok) {
-        const data = await res.json();
+        const data = await res.text();
         return alert('⚠️ Error: ' + (data.error || 'No se pudo finalizar'));
     }
 
