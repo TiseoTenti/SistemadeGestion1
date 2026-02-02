@@ -14,7 +14,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # ================================
 # CONFIGURACIÓN
 # ================================
-CSV_PATH = os.path.join(BASE_DIR, "insumos_limpio2.csv")  # <-- Ruta de tu CSV
+CSV_PATH = os.path.join(BASE_DIR, "insumos.csv")  # <-- Ruta de tu CSV
 CANTIDAD_DEFAULT = 1000
 UNIDAD_DEFAULT = "Unidad"
 STOCK_MINIMO_DEFAULT = 1

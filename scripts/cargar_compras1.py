@@ -3,6 +3,7 @@ import os
 import pandas as pd
 from decimal import Decimal
 from datetime import datetime
+
 # ================================
 # AGREGAR RAÍZ DEL PROYECTO
 # ================================
@@ -27,19 +28,24 @@ def normalizar(valor):
     return str(valor).strip().upper()
 
 def limitar(texto, max_len):
-    if not texto:
-        return ""
-    return texto[:max_len]
+    return texto[:max_len] if texto else ""
 
 def decimal_safe(valor):
     try:
-        return Decimal(str(valor)).quantize(Decimal("0.01"))
+        if pd.isna(valor):
+            return Decimal("0.00")
+
+        limpio = (
+            str(valor)
+            .replace("$", "")
+            .replace(" ", "")
+            .replace(".", "")
+            .replace(",", ".")
+        )
+
+        return Decimal(limpio).quantize(Decimal("0.01"))
     except Exception:
         return Decimal("0.00")
-
-
-
-
 
 # ================================
 # PROCESO PRINCIPAL
@@ -50,9 +56,8 @@ with app.app_context():
     compras_insertadas = 0
 
     for _, row in df.iterrows():
-        # ----------------------------
-        # PROVEEDOR
-        # ----------------------------
+
+        # ---------- PROVEEDOR ----------
         nombre_proveedor = limitar(normalizar(row.get("proveedor")), 100)
 
         proveedor = Proveedor.query.filter_by(nombre=nombre_proveedor).first()
@@ -64,11 +69,8 @@ with app.app_context():
             )
             db.session.add(proveedor)
             db.session.flush()
-            print(f"🆕 Proveedor creado: {nombre_proveedor}")
 
-        # ----------------------------
-        # INSUMO
-        # ----------------------------
+        # ---------- INSUMO ----------
         nombre_insumo = limitar(normalizar(row.get("insumo")), 100)
 
         insumo = Insumo.query.filter_by(nombre=nombre_insumo).first()
@@ -77,34 +79,26 @@ with app.app_context():
             insumo = Insumo(
                 nombre=nombre_insumo,
                 unidad_medida=UNIDAD_MEDIDA_DEFAULT,
-                cantidad=Decimal("1")
+                cantidad=Decimal("0")
             )
             db.session.add(insumo)
             db.session.flush()
-            print(f"🆕 Insumo creado: {nombre_insumo}")
 
-
-        # ----------------------------
-        # FECHA
-        # ----------------------------
+        # ---------- FECHA ----------
         try:
             fecha = pd.to_datetime(row.get("fecha")).date()
         except Exception:
             fecha = datetime.utcnow().date()
 
-        # ----------------------------
-        # CANTIDAD / PRECIO
-        # ----------------------------
+        # ---------- CANTIDAD / PRECIO ----------
         cantidad = decimal_safe(row.get("cantidad"))
         precio_unitario = decimal_safe(row.get("precio_unitario"))
         total = (cantidad * precio_unitario).quantize(Decimal("0.01"))
 
-        # ----------------------------
-        # COMPRA
-        # ----------------------------
+        # ---------- COMPRA ----------
         compra = Compra(
             fecha=fecha,
-            proveedor=proveedor,
+            id_proveedor=proveedor.id_proveedor,
             id_insumo=insumo.id_insumo,
             cantidad=cantidad,
             precio_unitario=precio_unitario,
@@ -113,10 +107,8 @@ with app.app_context():
 
         db.session.add(compra)
         compras_insertadas += 1
-        
-        # --------------------------------
-        # PROVEEDOR - INSUMO (PRECIO)
-        # --------------------------------
+
+        # ---------- PROVEEDOR - INSUMO ----------
         pi = ProveedorInsumo.query.filter_by(
             id_proveedor=proveedor.id_proveedor,
             id_insumo=insumo.id_insumo
@@ -133,9 +125,7 @@ with app.app_context():
         else:
             pi.precio_actual = precio_unitario
 
-# --------------------------------
-# HISTORIAL DE PRECIOS
-# --------------------------------
+        # ---------- HISTORIAL DE PRECIOS ----------
         hist = HistorialPrecio(
             id_proveedor_insumo=pi.id_proveedor_insumo,
             precio=precio_unitario
@@ -144,4 +134,3 @@ with app.app_context():
 
     db.session.commit()
     print(f"✅ Carga finalizada. Compras insertadas: {compras_insertadas}")
-

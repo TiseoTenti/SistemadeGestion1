@@ -13,7 +13,7 @@ from models import Proveedor  # ajustá según tu proyecto
 # ================================
 # CONFIGURACIÓN
 # ================================
-CSV_PATH = "/app/scripts/proveedores.csv"  # <-- Ruta de tu CSV dentro del contenedor
+CSV_PATH = "/app/scripts/proveedores_formateado.csv"  # <-- Ruta de tu CSV dentro del contenedor
 REEMPLAZO_DEFAULT = "-"  # Valor para campos vacíos
 
 # ================================

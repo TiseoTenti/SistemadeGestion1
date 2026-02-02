@@ -7,8 +7,8 @@ services:
     env_file:
       - .env
     environment:
-      VIRTUAL_HOST: www.mwtanquesinventario.com
-      LETSENCRYPT_HOST: www.mwtanquesinventario.com
+      VIRTUAL_HOST: www.mwtanquesinventario.com,mwtanquesinventario.com
+      LETSENCRYPT_HOST: www.mwtanquesinventario.com,mwtanquesinventario.com
       LETSENCRYPT_EMAIL: tu_email@dominio.com
       VIRTUAL_PORT: 5000
     expose:
