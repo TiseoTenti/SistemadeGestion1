@@ -14,7 +14,6 @@ compras_bp = Blueprint('compras_bp', __name__, url_prefix='/api/v1/compras')
 
 @compras_bp.route('/', methods=['GET'])
 def listar_compras():
-<<<<<<< HEAD
     compras = (
         db.session.query(Compra)
         .join(Proveedor)
@@ -24,7 +23,6 @@ def listar_compras():
         .all()
     )
     return jsonify([c.to_dict() for c in compras])
-=======
     """
     Devuelve compras paginadas. 
     Parámetros opcionales: page (default 1), per_page (default 20)
@@ -62,9 +60,6 @@ def listar_compras():
         "per_page": pagination.per_page,
         "pages": pagination.pages
     })
-
->>>>>>> d68dfeb (Actualizar compras: mostrar últimas 20, mejoras de frontend y backend)
-
 
 
 
